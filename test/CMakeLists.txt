@@ -12,10 +12,11 @@ add_executable(chalkwalk_dsp_tests
     SvfTests.cpp
     PolyBlepTests.cpp
     SoftClipTests.cpp
-    InterpolationTests.cpp)
+    InterpolationTests.cpp
+    MeasureTests.cpp)
 
 target_link_libraries(chalkwalk_dsp_tests
-    PRIVATE chalkwalk::dsp Catch2::Catch2WithMain)
+    PRIVATE chalkwalk::dsp chalkwalk::dsp::measure Catch2::Catch2WithMain)
 
 # MSVC does not speak GCC's warning flags, and passing them is a hard error
 # rather than a warning -- so an unguarded list breaks the Windows build at the

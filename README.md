@@ -1,11 +1,19 @@
 # chalkwalk-dsp
 
-Audio DSP primitives. JUCE-free, dependency-free, header-only, MIT.
+Audio DSP primitives and measurement. JUCE-free, MIT.
 
-Four things, chosen because they are small enough to test exhaustively and
-because a specification exists that you could fail to meet. Anything with a
-real specification — loudness to ITU-R BS.1770, resampling, FFT — should be a
-dependency instead, and is.
+Two targets. `chalkwalk::dsp` is the primitives: header-only, dependency-free,
+chosen because they are small enough to test exhaustively and because a
+specification exists that you could fail to meet. Anything with a *real*
+specification — loudness to ITU-R BS.1770, resampling, FFT — is a dependency
+rather than a reimplementation.
+
+`chalkwalk::dsp::measure` is the instruments you check the primitives with, and
+it is separate precisely because it takes one of those dependencies. Link it
+only if you want a number; a consumer that wants a filter never builds a
+loudness meter.
+
+### `chalkwalk::dsp` — primitives
 
 | | |
 |---|---|
@@ -14,6 +22,12 @@ dependency instead, and is.
 | `SoftClip.h` | Soft-knee ceiling that is *exactly* unity below the knee |
 | `Interpolation.h` | 4-point Hermite, for fractional buffer reads |
 | `Denormal.h` | State flushing, so an idle filter does not get slower |
+
+### `chalkwalk::dsp::measure` — instruments
+
+| | |
+|---|---|
+| `Measure.h` | peak, rms, crest, dB, brightness, pitch, loudness (LUFS) |
 
 ## Why this exists
 
@@ -46,6 +60,17 @@ that mattered:
 
 Each merge takes both halves rather than picking a winner.
 
+The measurement half arrived the same way, and for a sharper reason: `peak` and
+`rms` existed *three* times across these repositories, and `fundamentalHz`
+twice. Two independent pitch detectors is two answers to one question. One of
+them read 294.7 Hz for a 440 Hz tone, and the fix went all the way through
+before anyone suspected the instrument rather than the code under test.
+
+A detector used only by the suite that defines it is a detector nobody has
+calibrated. So these are calibrated here, against synthetic signals whose
+answers are known in advance, and `integratedLufs` is checked against ffmpeg's
+`ebur128` rather than against itself — agreement is inside 0.05 LU.
+
 ## Use
 
 Header-only. Add the include directory, or as a CMake subdirectory:
@@ -53,7 +78,13 @@ Header-only. Add the include directory, or as a CMake subdirectory:
 ```cmake
 add_subdirectory(libs/dsp)
 target_link_libraries(your_target PRIVATE chalkwalk::dsp)
+
+# Only if you need to measure something. Usually a test or a tool target.
+target_link_libraries(your_tests PRIVATE chalkwalk::dsp::measure)
 ```
+
+`measure` needs the `libebur128` submodule, so a consumer of the primitives
+alone can clone without `--recursive`; a consumer of `measure` cannot.
 
 ```cpp
 #include <chalkwalk/dsp/Svf.h>
@@ -65,6 +96,14 @@ const float out = filter.process(in, chalkwalk::dsp::Svf::LowPass);
 
 `setCoeffs(g, k)` is there too, for callers that already smooth their own
 coefficients per sample and do not want `tan()` called again inside the filter.
+
+```cpp
+#include <chalkwalk/dsp/Measure.h>
+
+namespace measure = chalkwalk::dsp::measure;
+const double hz   = measure::fundamentalHz(buf, n, 48000.0);
+const double lufs = measure::integratedLufs(buf, n, 48000.0);
+```
 
 ## Build and test
 
@@ -79,6 +118,10 @@ not been extracted.
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+`chalkwalk::dsp::measure` links [libebur128](https://github.com/jiixyj/libebur128)
+(MIT), vendored as a submodule at `modules/libebur128`. The primitives link
+nothing.
 
 Part of the [chalkwalk](https://github.com/chalkwalk) plugin ecosystem,
 alongside [chalkwalk-music](https://github.com/chalkwalk/chalkwalk-music).
