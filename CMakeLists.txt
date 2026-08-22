@@ -18,7 +18,7 @@ add_library(chalkwalk::dsp ALIAS chalkwalk_dsp)
 target_include_directories(chalkwalk_dsp
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-target_compile_features(chalkwalk_dsp INTERFACE cxx_std_17)
+target_compile_features(chalkwalk_dsp INTERFACE cxx_std_20)
 
 # ---------------------------------------------------------------------------
 # chalkwalk::dsp::measure -- peak, rms, crest, brightness, pitch and loudness.
