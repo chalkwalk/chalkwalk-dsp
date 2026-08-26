@@ -21,12 +21,19 @@ target_include_directories(chalkwalk_dsp
 target_compile_features(chalkwalk_dsp INTERFACE cxx_std_17)
 
 # ---------------------------------------------------------------------------
-# chalkwalk::dsp::measure -- peak, rms, crest, brightness, pitch and loudness.
+# chalkwalk::dsp::measure -- loudness, and only loudness.
 #
 # A SEPARATE TARGET, because it is the one part of this library with a
 # dependency. `chalkwalk::dsp` stays header-only and dependency-free, so a
 # consumer that wants a filter never links a loudness meter; a consumer that
-# wants a number opts in by naming this target instead.
+# wants BS.1770 opts in by naming this target instead.
+#
+# The instruments themselves -- peak, rms, crest, brightness, pitch -- are in
+# `Measure.h` and need only `chalkwalk::dsp`. They used to live behind this
+# target too, because `<ebur128.h>` sat at the top of the header they share, so
+# asking "is this signal silent or clipping" cost a loudness meter. Splitting
+# `Loudness.h` out is what makes the cheap half reachable from a library that
+# has no business linking libebur128.
 #
 # It is a target rather than a suggestion that everyone write their own
 # because the alternative was measured: peak and rms existed three times over

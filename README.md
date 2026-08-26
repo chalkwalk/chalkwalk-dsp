@@ -23,11 +23,12 @@ loudness meter.
 | `Interpolation.h` | 4-point Hermite, for fractional buffer reads |
 | `Denormal.h` | State flushing, so an idle filter does not get slower |
 
-### `chalkwalk::dsp::measure` — instruments
+### Instruments
 
 | | |
 |---|---|
-| `Measure.h` | peak, rms, crest, dB, brightness, pitch, loudness (LUFS) |
+| `Measure.h` | peak, rms, crest, dB, brightness, pitch — needs `chalkwalk::dsp` |
+| `Loudness.h` | integrated loudness (LUFS) — needs `chalkwalk::dsp::measure` |
 
 ## Why this exists
 
@@ -79,12 +80,15 @@ Header-only. Add the include directory, or as a CMake subdirectory:
 add_subdirectory(libs/dsp)
 target_link_libraries(your_target PRIVATE chalkwalk::dsp)
 
-# Only if you need to measure something. Usually a test or a tool target.
+# Only if you need LOUDNESS. Usually a test or a tool target.
 target_link_libraries(your_tests PRIVATE chalkwalk::dsp::measure)
 ```
 
-`measure` needs the `libebur128` submodule, so a consumer of the primitives
-alone can clone without `--recursive`; a consumer of `measure` cannot.
+`chalkwalk::dsp` is enough for `Measure.h` — peak, rms, crest, brightness and
+pitch are arithmetic over a buffer. `chalkwalk::dsp::measure` is for
+`Loudness.h` alone, which needs the `libebur128` submodule; so a consumer that
+wants to know whether a signal is silent, faint or clipping can clone without
+`--recursive`, and only a consumer that wants BS.1770 cannot.
 
 ```cpp
 #include <chalkwalk/dsp/Svf.h>
@@ -98,12 +102,16 @@ const float out = filter.process(in, chalkwalk::dsp::Svf::LowPass);
 coefficients per sample and do not want `tan()` called again inside the filter.
 
 ```cpp
-#include <chalkwalk/dsp/Measure.h>
+#include <chalkwalk/dsp/Measure.h>   // chalkwalk::dsp
+#include <chalkwalk/dsp/Loudness.h>  // chalkwalk::dsp::measure
 
 namespace measure = chalkwalk::dsp::measure;
 const double hz   = measure::fundamentalHz(buf, n, 48000.0);
 const double lufs = measure::integratedLufs(buf, n, 48000.0);
 ```
+
+Two headers, one namespace. Which one a name lives in is a question about what
+you link, never about what you spell.
 
 ## Build and test
 

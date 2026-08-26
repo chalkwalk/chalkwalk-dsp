@@ -35,3 +35,17 @@ else()
 endif()
 
 add_test(NAME chalkwalk_dsp COMMAND chalkwalk_dsp_tests)
+
+# `Measure.h` builds against `chalkwalk::dsp` alone -- checked by building it
+# that way. See the comment in MeasureIsolation.cpp: the suite above links both
+# targets, so it cannot notice a dependency drifting back into the cheap half.
+# An OBJECT library because there is nothing to run; the compile IS the test.
+add_library(chalkwalk_dsp_measure_isolation OBJECT MeasureIsolation.cpp)
+target_link_libraries(chalkwalk_dsp_measure_isolation PRIVATE chalkwalk::dsp)
+
+if(MSVC)
+    target_compile_options(chalkwalk_dsp_measure_isolation PRIVATE /W4)
+else()
+    target_compile_options(chalkwalk_dsp_measure_isolation
+        PRIVATE -Wall -Wextra -Wpedantic -Wshadow)
+endif()

@@ -1,5 +1,6 @@
 #include "JuceUnitShim.h"
 
+#include <chalkwalk/dsp/Loudness.h>
 #include <chalkwalk/dsp/Measure.h>
 
 namespace AudioMeasure = chalkwalk::dsp::measure;
