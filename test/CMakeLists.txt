@@ -13,7 +13,9 @@ add_executable(chalkwalk_dsp_tests
     PolyBlepTests.cpp
     SoftClipTests.cpp
     InterpolationTests.cpp
-    MeasureTests.cpp)
+    MeasureTests.cpp
+    MinimumPhaseTests.cpp
+    SpectrumTests.cpp)
 
 target_link_libraries(chalkwalk_dsp_tests
     PRIVATE chalkwalk::dsp chalkwalk::dsp::measure Catch2::Catch2WithMain)
