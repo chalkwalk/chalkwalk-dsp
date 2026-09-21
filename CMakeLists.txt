@@ -42,10 +42,36 @@ target_compile_features(chalkwalk_dsp INTERFACE cxx_std_17)
 # all the way through before anyone suspected the instrument. A detector used
 # only by the suite that defines it is a detector nobody has calibrated.
 # ---------------------------------------------------------------------------
-if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/libebur128/ebur128/ebur128.c)
-    message(FATAL_ERROR
-        "modules/libebur128 is empty. Run: git submodule update --init --recursive")
+# ---- AND THE SPLIT HAS TO BE REAL AT CONFIGURE TIME, NOT ONLY AT LINK TIME ----
+#
+# This block used to be an unconditional FATAL_ERROR, which made the split above
+# a fiction: `chalkwalk::dsp` is header-only and dependency-free, but you could
+# not CONFIGURE it without libebur128 checked out. A consumer that wanted a
+# filter still paid for the loudness meter -- in clone bytes, in a submodule it
+# had no reason to initialise, and in a configure that failed outright telling
+# it to fetch something it would never compile.
+#
+# Found when chalkwalk-tape took this library as a dependency for four DSP
+# primitives and could not configure, because `git submodule add` does not
+# recurse and the nested libebur128 was empty. The dependency the split exists
+# to contain had escaped through the build system.
+#
+# So: present means measure is built, absent means it is not, and a consumer
+# that asked for `chalkwalk::dsp::measure` gets told exactly that and how to fix
+# it. The standalone build initialises submodules recursively and is therefore
+# always the complete library, which is what its own suite tests.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/modules/libebur128/ebur128/ebur128.c")
+    set(CHALKWALK_DSP_MEASURE_AVAILABLE ON)
+else()
+    set(CHALKWALK_DSP_MEASURE_AVAILABLE OFF)
+    message(STATUS
+        "chalkwalk-dsp: modules/libebur128 is not checked out, so "
+        "chalkwalk::dsp::measure is NOT defined. The header-only "
+        "chalkwalk::dsp is unaffected. If something needs BS.1770 loudness: "
+        "git submodule update --init --recursive")
 endif()
+
+if(CHALKWALK_DSP_MEASURE_AVAILABLE)
 
 # libebur128 (MIT) -- ITU-R BS.1770 loudness.
 #
@@ -88,6 +114,7 @@ endif()
 add_library(chalkwalk_dsp_measure INTERFACE)
 add_library(chalkwalk::dsp::measure ALIAS chalkwalk_dsp_measure)
 target_link_libraries(chalkwalk_dsp_measure INTERFACE chalkwalk::dsp ebur128)
+endif()
 
 # Tests only when built on its own, or when a parent explicitly asks. A parent
 # that pulls this in for the headers should not have to build Catch2.
@@ -98,6 +125,17 @@ else()
 endif()
 option(CHALKWALK_DSP_TESTS "Build chalkwalk-dsp tests"
        ${CHALKWALK_DSP_TESTS_DEFAULT})
+
+# The suite exercises `measure`, so it needs libebur128. A tree without it is a
+# partial checkout rather than a configuration, and silently running a subset
+# would be the worse outcome -- a green suite that did not test the half with a
+# dependency.
+if(CHALKWALK_DSP_TESTS AND NOT CHALKWALK_DSP_MEASURE_AVAILABLE)
+    message(FATAL_ERROR
+        "chalkwalk-dsp tests were requested but modules/libebur128 is not "
+        "checked out, so half the library cannot be built. Run: "
+        "git submodule update --init --recursive")
+endif()
 
 if(CHALKWALK_DSP_TESTS)
     enable_testing()
