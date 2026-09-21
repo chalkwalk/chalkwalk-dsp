@@ -16,7 +16,8 @@ add_executable(chalkwalk_dsp_tests
     MeasureTests.cpp
     MinimumPhaseTests.cpp
     SpectrumTests.cpp
-    DecimatorTests.cpp)
+    DecimatorTests.cpp
+    PowerSupplyTests.cpp)
 
 target_link_libraries(chalkwalk_dsp_tests
     PRIVATE chalkwalk::dsp chalkwalk::dsp::measure Catch2::Catch2WithMain)
