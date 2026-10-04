@@ -55,6 +55,9 @@
 //
 // JUCE-free by design. Promotion target: chalkwalk-dsp.
 
+#include <chalkwalk/dsp/Pi.h>
+#include <chalkwalk/dsp/Bessel.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -78,7 +81,7 @@ namespace chalkwalk::dsp
             const double transition = (stopbandHz - passbandHz) / sampleRate;
             int taps = (transition > 0.0)
                 ? static_cast<int>(std::ceil((stopbandDb - 8.0)
-                                             / (2.285 * 2.0 * M_PI * transition)))
+                                             / (2.285 * 2.0 * kPi * transition)))
                 : 8;
             if (taps < 8) taps = 8;
             taps |= 1;  // odd, so there is a centre tap and a whole-sample delay
@@ -125,11 +128,11 @@ namespace chalkwalk::dsp
             {
                 const double x = static_cast<double>(n);
                 const double sinc = (n == 0) ? 2.0 * cutoff
-                                             : std::sin(2.0 * M_PI * cutoff * x)
-                                               / (M_PI * x);
+                                             : std::sin(2.0 * kPi * cutoff * x)
+                                               / (kPi * x);
                 const double r = x / static_cast<double>(half);
-                const double w = std::cyl_bessel_i(0.0, beta * std::sqrt(1.0 - r * r))
-                               / std::cyl_bessel_i(0.0, beta);
+                const double w = besselI0(beta * std::sqrt(1.0 - r * r))
+                               / besselI0(beta);
                 coefficients_[static_cast<std::size_t>(n + half)] = sinc * w;
                 sum += sinc * w;
             }
@@ -250,7 +253,7 @@ namespace chalkwalk::dsp
             double re = 0.0, im = 0.0;
             for (std::size_t i = 0; i < coefficients_.size(); ++i)
             {
-                const double a = -2.0 * M_PI * hz * static_cast<double>(i) / sampleRate;
+                const double a = -2.0 * kPi * hz * static_cast<double>(i) / sampleRate;
                 re += coefficients_[i] * std::cos(a);
                 im += coefficients_[i] * std::sin(a);
             }

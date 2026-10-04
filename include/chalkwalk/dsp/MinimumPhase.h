@@ -33,6 +33,8 @@
 //
 // JUCE-free by design. Part of chalkwalk-dsp.
 
+#include <chalkwalk/dsp/Pi.h>
+
 #include <cmath>
 #include <complex>
 #include <cstddef>
@@ -63,7 +65,7 @@ namespace chalkwalk::dsp
 
         for (std::size_t len = 2; len <= n; len <<= 1)
         {
-            const double angle = (inverse ? 2.0 : -2.0) * M_PI
+            const double angle = (inverse ? 2.0 : -2.0) * kPi
                                / static_cast<double>(len);
             const std::complex<double> step{ std::cos(angle), std::sin(angle) };
             for (std::size_t i = 0; i < n; i += len)

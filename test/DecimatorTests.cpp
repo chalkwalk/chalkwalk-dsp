@@ -11,6 +11,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <chalkwalk/dsp/Pi.h>
 #include <chalkwalk/dsp/Decimator.h>
 #include <chalkwalk/dsp/Interpolator.h>
 
@@ -19,6 +20,7 @@
 
 using Catch::Approx;
 namespace tape = chalkwalk::dsp;
+using chalkwalk::dsp::kPi;   // not M_PI, which MSVC lacks
 
 namespace
 {
@@ -190,7 +192,7 @@ TEST_CASE("the upsampler suppresses its images", "[interpolator]")
     double buffer[tape::Interpolator::kFactor] = {};
     for (int n = 0; n < 32768; ++n)
     {
-        up.push(std::sin(2.0 * M_PI * probe * n / kIn48), buffer);
+        up.push(std::sin(2.0 * kPi * probe * n / kIn48), buffer);
         for (int i = 0; i < tape::Interpolator::kFactor; ++i)
             y.push_back(buffer[i]);
     }
@@ -201,7 +203,7 @@ TEST_CASE("the upsampler suppresses its images", "[interpolator]")
         double re = 0.0, im = 0.0;
         for (std::size_t i = from; i < y.size(); ++i)
         {
-            const double w = 2.0 * M_PI * hz * static_cast<double>(i - from) / outRate;
+            const double w = 2.0 * kPi * hz * static_cast<double>(i - from) / outRate;
             re += y[i] * std::cos(w);
             im += y[i] * std::sin(w);
         }

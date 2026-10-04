@@ -10,6 +10,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <chalkwalk/dsp/Pi.h>
 #include <chalkwalk/dsp/MinimumPhase.h>
 
 #include <cmath>
@@ -18,6 +19,7 @@
 
 using Catch::Approx;
 namespace dsp = chalkwalk::dsp;
+using chalkwalk::dsp::kPi;   // not M_PI, which MSVC lacks
 
 namespace
 {
@@ -33,7 +35,7 @@ namespace
             std::complex<double> sum{ 0.0, 0.0 };
             for (std::size_t i = 0; i < n; ++i)
             {
-                const double angle = (inverse ? 2.0 : -2.0) * M_PI
+                const double angle = (inverse ? 2.0 : -2.0) * kPi
                     * static_cast<double>(k) * static_cast<double>(i)
                     / static_cast<double>(n);
                 sum += x[i] * std::complex<double>{ std::cos(angle), std::sin(angle) };
@@ -76,7 +78,7 @@ TEST_CASE("the transform's direction is pinned, not just its magnitude",
     const std::size_t n = 32;
     std::vector<std::complex<double>> x(n);
     for (std::size_t i = 0; i < n; ++i)
-        x[i] = std::sin(2.0 * M_PI * 3.0 * static_cast<double>(i)
+        x[i] = std::sin(2.0 * kPi * 3.0 * static_cast<double>(i)
                         / static_cast<double>(n));
     dsp::fft(x, false);
     INFO("bin 3 = " << x[3].real() << " + " << x[3].imag() << "i");
@@ -105,7 +107,7 @@ TEST_CASE("a one-pole magnitude designs back into a one-pole impulse response",
     const double fs = 1000.0;
     const auto magnitude = [&](double hz)
     {
-        const double w = 2.0 * M_PI * hz / fs;
+        const double w = 2.0 * kPi * hz / fs;
         const std::complex<double> pole =
             1.0 - a * std::complex<double>{ std::cos(w), -std::sin(w) };
         return 1.0 / std::abs(pole);
@@ -131,7 +133,7 @@ TEST_CASE("the design is minimum phase, not merely the right magnitude",
     const double fs = 1000.0;
     const auto magnitude = [&](double hz)
     {
-        const double w = 2.0 * M_PI * hz / fs;
+        const double w = 2.0 * kPi * hz / fs;
         const std::complex<double> pole =
             1.0 - a * std::complex<double>{ std::cos(w), -std::sin(w) };
         return 1.0 / std::abs(pole);
@@ -153,7 +155,7 @@ TEST_CASE("the design is minimum phase, not merely the right magnitude",
             const double hz = static_cast<double>(k) / points * 0.5 * fs;
             const double weight = (k == 0 || k == points) ? 0.5 : 1.0;
             sum += weight * magnitude(hz)
-                 * std::cos(2.0 * M_PI * hz * n / fs);
+                 * std::cos(2.0 * kPi * hz * n / fs);
         }
         symmetric[static_cast<std::size_t>(n + half)] = sum / points;
     }
@@ -171,7 +173,7 @@ TEST_CASE("the design is minimum phase, not merely the right magnitude",
         double re = 0.0, im = 0.0;
         for (std::size_t i = 0; i < h.size(); ++i)
         {
-            const double angle = -2.0 * M_PI * hz * static_cast<double>(i) / fs;
+            const double angle = -2.0 * kPi * hz * static_cast<double>(i) / fs;
             re += h[i] * std::cos(angle);
             im += h[i] * std::sin(angle);
         }
@@ -199,7 +201,7 @@ TEST_CASE("a short transform aliases the cepstrum, and the default does not",
     const double fs = 1000.0;
     const auto magnitude = [&](double hz)
     {
-        const double w = 2.0 * M_PI * hz / fs;
+        const double w = 2.0 * kPi * hz / fs;
         return 1.0 / std::abs(1.0 - a * std::complex<double>{ std::cos(w),
                                                               -std::sin(w) });
     };

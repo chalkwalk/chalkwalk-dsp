@@ -10,6 +10,7 @@ endif()
 
 add_executable(chalkwalk_dsp_tests
     SvfTests.cpp
+    BesselTests.cpp
     PolyBlepTests.cpp
     SoftClipTests.cpp
     InterpolationTests.cpp

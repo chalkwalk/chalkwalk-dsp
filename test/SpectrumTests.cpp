@@ -8,6 +8,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <chalkwalk/dsp/Pi.h>
 #include <chalkwalk/dsp/Spectrum.h>
 
 #include <cmath>
@@ -16,6 +17,7 @@
 
 using Catch::Approx;
 namespace dsp = chalkwalk::dsp::spectrum;
+using chalkwalk::dsp::kPi;   // not M_PI, which MSVC lacks
 
 TEST_CASE("the transform puts DC in bin zero", "[spectrum]")
 {
@@ -34,7 +36,7 @@ TEST_CASE("a bin-k sine lands in bins k and n-k at height n/2", "[spectrum]")
     {
         std::vector<double> signal(n);
         for (int i = 0; i < n; ++i)
-            signal[static_cast<std::size_t>(i)] = std::sin(2.0 * M_PI * k * i / n);
+            signal[static_cast<std::size_t>(i)] = std::sin(2.0 * kPi * k * i / n);
 
         const auto spectrum = dsp::forwardFft(signal);
         REQUIRE(std::abs(spectrum[static_cast<std::size_t>(k)])
@@ -57,7 +59,7 @@ TEST_CASE("the transform runs in the right direction", "[spectrum]")
     constexpr int k = 5;
     std::vector<double> signal(n);
     for (int i = 0; i < n; ++i)
-        signal[static_cast<std::size_t>(i)] = std::cos(2.0 * M_PI * k * i / n);
+        signal[static_cast<std::size_t>(i)] = std::cos(2.0 * kPi * k * i / n);
 
     const auto spectrum = dsp::forwardFft(signal);
 
@@ -70,7 +72,7 @@ TEST_CASE("the transform runs in the right direction", "[spectrum]")
     // directions.
     std::vector<double> sine(n);
     for (int i = 0; i < n; ++i)
-        sine[static_cast<std::size_t>(i)] = std::sin(2.0 * M_PI * k * i / n);
+        sine[static_cast<std::size_t>(i)] = std::sin(2.0 * kPi * k * i / n);
     const auto sineSpectrum = dsp::forwardFft(sine);
     REQUIRE(sineSpectrum[k].imag() < -1.0);
 }
@@ -82,7 +84,7 @@ TEST_CASE("the transform agrees with a naive DFT", "[spectrum]")
     std::vector<double> signal(n);
     for (int i = 0; i < n; ++i)
         signal[static_cast<std::size_t>(i)] =
-            std::sin(2.0 * M_PI * 11.0 * i / n) + 0.4 * std::cos(2.0 * M_PI * 37.0 * i / n);
+            std::sin(2.0 * kPi * 11.0 * i / n) + 0.4 * std::cos(2.0 * kPi * 37.0 * i / n);
 
     const auto fast = dsp::forwardFft(signal);
 
@@ -92,7 +94,7 @@ TEST_CASE("the transform agrees with a naive DFT", "[spectrum]")
         std::complex<double> sum{};
         for (int i = 0; i < n; ++i)
         {
-            const double angle = -2.0 * M_PI * k * i / n;
+            const double angle = -2.0 * kPi * k * i / n;
             sum += signal[static_cast<std::size_t>(i)]
                  * std::complex<double>(std::cos(angle), std::sin(angle));
         }
@@ -111,7 +113,7 @@ TEST_CASE("a pure sine has no non-harmonic energy", "[spectrum][aliasing]")
 
     std::vector<double> signal(n);
     for (int i = 0; i < n; ++i)
-        signal[static_cast<std::size_t>(i)] = std::sin(2.0 * M_PI * hz * i / sampleRate);
+        signal[static_cast<std::size_t>(i)] = std::sin(2.0 * kPi * hz * i / sampleRate);
 
     // MEASURED FLOOR: -88.6 dB, which is the window's own sidelobe level and
     // not a property of the signal. Asserted just below it rather than at some
@@ -139,7 +141,7 @@ TEST_CASE("harmonic distortion is not counted as aliasing", "[spectrum][aliasing
     for (int i = 0; i < n; ++i)
     {
         const double t = i / sampleRate;
-        signal[static_cast<std::size_t>(i)] = std::tanh(3.0 * std::sin(2.0 * M_PI * hz * t));
+        signal[static_cast<std::size_t>(i)] = std::tanh(3.0 * std::sin(2.0 * kPi * hz * t));
     }
 
     REQUIRE(dsp::nonHarmonicEnergyDb(signal, hz, sampleRate) < -80.0);
@@ -158,7 +160,7 @@ TEST_CASE("a deliberately aliased tone is detected", "[spectrum][aliasing]")
     {
         const double t = i / sampleRate;
         signal[static_cast<std::size_t>(i)] =
-            std::sin(2.0 * M_PI * hz * t) + 0.01 * std::sin(2.0 * M_PI * 3456.0 * t);
+            std::sin(2.0 * kPi * hz * t) + 0.01 * std::sin(2.0 * kPi * 3456.0 * t);
     }
 
     const double reading = dsp::nonHarmonicEnergyDb(signal, hz, sampleRate);
