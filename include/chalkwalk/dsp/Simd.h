@@ -28,8 +28,13 @@
 // GUARDED, because it is a GNU extension resting on ifunc: glibc has it, and
 // Apple and MSVC do not. Elsewhere this expands to nothing and the baseline
 // build is exactly what it was.
+//
+// AND OFF UNDER THREADSANITIZER. An ifunc resolver runs while the dynamic
+// loader is still relocating, before the sanitizer runtime is initialised, and
+// GCC instruments it anyway: a TSan build of anything that uses this died in
+// `PlaybackFilter::process`'s resolver before `main`, with no report at all.
 #if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__) \
-    && !defined(__APPLE__) && !defined(_WIN32)
+    && !defined(__APPLE__) && !defined(_WIN32) && !defined(__SANITIZE_THREAD__)
   #define CHALKWALK_DSP_MULTIVERSION __attribute__((target_clones("default","avx2")))
 #else
   #define CHALKWALK_DSP_MULTIVERSION
