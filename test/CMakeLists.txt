@@ -20,7 +20,8 @@ add_executable(chalkwalk_dsp_tests
     DecimatorTests.cpp
     PowerSupplyTests.cpp
     SlidingLoudnessTests.cpp
-    ResamplerTests.cpp)
+    ResamplerTests.cpp
+    MixingTests.cpp)
 
 target_link_libraries(chalkwalk_dsp_tests
     PRIVATE chalkwalk::dsp chalkwalk::dsp::measure Catch2::Catch2WithMain)

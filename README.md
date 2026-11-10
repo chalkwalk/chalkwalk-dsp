@@ -22,6 +22,12 @@ loudness meter.
 | `SoftClip.h` | Soft-knee ceiling that is *exactly* unity below the knee |
 | `Interpolation.h` | 4-point Hermite, for fractional buffer reads |
 | `Denormal.h` | State flushing, so an idle filter does not get slower |
+| `OnePole.h` | 6 dB/octave low-pass and its complementary high-pass |
+| `TiltEq.h` | Lows one way, highs the other, about a pivot; gliding |
+| `Compressor.h` | Feed-forward, stereo-linked, soft knee, sidechain high-pass |
+| `PeakLimiter.h` | Lookahead limiter that never passes its ceiling |
+| `SmallRoom.h` | A short, dark feedback-delay room, for a shared space, not an effect |
+| `Resampler.h` | Streaming windowed-sinc resampler, any ratio |
 
 ### Instruments
 
@@ -29,6 +35,7 @@ loudness meter.
 |---|---|
 | `Measure.h` | peak, rms, crest, dB, brightness, pitch — needs `chalkwalk::dsp` |
 | `Loudness.h` | integrated loudness (LUFS) — needs `chalkwalk::dsp::measure` |
+| `SlidingLoudness.h` | the same over a moving window, and any shorter window of it |
 
 ## Why this exists
 

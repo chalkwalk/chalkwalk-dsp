@@ -43,6 +43,7 @@ public:
         hop_(std::max(1, (int)std::lround(sampleRate * 0.1))),
         blocksPerWindow_(std::max(1, (int)std::lround(windowSeconds * 10.0))),
         blocks_((size_t)blocksPerWindow_, kSilenceLufs),
+        energies_((size_t)blocksPerWindow_, 0.0),
         interleaved_((size_t)hop_ * (size_t)channels_) {
     st_ = ebur128_init((unsigned)channels_, (unsigned long)std::lround(sampleRate),
                        EBUR128_MODE_M);
@@ -87,35 +88,18 @@ public:
 
   // Gated loudness of the window in LUFS, or `kSilenceLufs` when no block in
   // it is above the absolute gate.
-  double lufs() const {
-    double sum = 0.0;
-    int n = 0;
-    for (double l : blocks_)
-      if (l > kAbsoluteGate) {
-        sum += energy(l);
-        ++n;
-      }
-    if (n == 0)
-      return kSilenceLufs;
-    const double relative = loudness(sum / n) - 10.0;
-    double gatedSum = 0.0;
-    int gated = 0;
-    for (double l : blocks_)
-      if (l > kAbsoluteGate && l > relative) {
-        gatedSum += energy(l);
-        ++gated;
-      }
-    return gated == 0 ? kSilenceLufs : loudness(gatedSum / gated);
-  }
+  double lufs() const { return lufsOfBlocks(blocksPerWindow_); }
+
+  // The same measurement over only the most recent `seconds` of the window
+  // (clamped to it). ONE METER, SEVERAL WINDOWS: a gain rider that wants a
+  // long view and a short one reads both from the same blocks, instead of
+  // running the K-weighting twice. It is exact for the same reason the whole
+  // window is: the last N blocks are the standard's blocks for those N.
+  double lufsOver(double seconds) const { return lufsOfBlocks(blocksIn(seconds)); }
 
   // How much of the window is above the absolute gate, in seconds of blocks.
-  double gatedSeconds() const {
-    int n = 0;
-    for (double l : blocks_)
-      if (l > kAbsoluteGate)
-        ++n;
-    return n * 0.1;
-  }
+  double gatedSeconds() const { return gatedSecondsOfBlocks(blocksPerWindow_); }
+  double gatedSecondsOver(double seconds) const { return gatedSecondsOfBlocks(blocksIn(seconds)); }
 
   // The last 400 ms, as libebur128 measures it: the momentary loudness.
   double momentaryLufs() const { return last_; }
@@ -124,6 +108,55 @@ private:
   static constexpr double kAbsoluteGate = -70.0;
   static double energy(double lufs) { return std::pow(10.0, (lufs + 0.691) / 10.0); }
   static double loudness(double e) { return -0.691 + 10.0 * std::log10(e); }
+
+  int blocksIn(double seconds) const {
+    const int n = (int)std::lround(seconds * 10.0);
+    return n < 1 ? 1 : (n > blocksPerWindow_ ? blocksPerWindow_ : n);
+  }
+
+  // The newest `count` blocks, newest first: f(lufs, energy).
+  template <class F> void forRecent(int count, F f) const {
+    int at = next_;
+    for (int i = 0; i < count; ++i) {
+      at = at == 0 ? blocksPerWindow_ - 1 : at - 1;
+      f(blocks_[(size_t)at], energies_[(size_t)at]);
+    }
+  }
+
+  // Energies are kept beside the blocks, so a reading costs additions, not a
+  // pow() per block: a five-minute window is 3000 blocks, read every few tens
+  // of milliseconds per channel.
+  double lufsOfBlocks(int count) const {
+    double sum = 0.0;
+    int n = 0;
+    forRecent(count, [&](double l, double e) {
+      if (l > kAbsoluteGate) {
+        sum += e;
+        ++n;
+      }
+    });
+    if (n == 0)
+      return kSilenceLufs;
+    const double relative = loudness(sum / n) - 10.0;
+    double gatedSum = 0.0;
+    int gated = 0;
+    forRecent(count, [&](double l, double e) {
+      if (l > kAbsoluteGate && l > relative) {
+        gatedSum += e;
+        ++gated;
+      }
+    });
+    return gated == 0 ? kSilenceLufs : loudness(gatedSum / gated);
+  }
+
+  double gatedSecondsOfBlocks(int count) const {
+    int n = 0;
+    forRecent(count, [&](double l, double) {
+      if (l > kAbsoluteGate)
+        ++n;
+    });
+    return n * 0.1;
+  }
 
   void onHop() {
     ++hops_;
@@ -134,6 +167,7 @@ private:
       m = kSilenceLufs;
     last_ = m;
     blocks_[(size_t)next_] = m;
+    energies_[(size_t)next_] = m > kAbsoluteGate ? energy(m) : 0.0;
     next_ = (next_ + 1) % blocksPerWindow_;
   }
 
@@ -141,6 +175,7 @@ private:
   int hop_;
   int blocksPerWindow_;
   std::vector<double> blocks_;
+  std::vector<double> energies_;
   std::vector<float> interleaved_;
   ebur128_state *st_ = nullptr;
   int filled_ = 0;

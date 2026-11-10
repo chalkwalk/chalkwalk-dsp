@@ -135,3 +135,24 @@ TEST_CASE("the limiter lets go after the peak", "[peak-limiter]") {
   lim.process(l.data() + 2000, r.data() + 2000, (int)l.size() - 2000);
   CHECK(lim.gainDb() > -0.01);
 }
+
+TEST_CASE("A shorter window read from a long meter is that window exactly", "[sliding]") {
+  // One meter, two readings: the long view and the last 30 s. The 30 s
+  // reading must equal a 30 s meter fed the same signal, block for block.
+  SlidingLoudness longMeter(1, kRate, 120.0), shortMeter(1, kRate, 30.0);
+  auto loud = tone(50.0, 0.3), quiet = tone(40.0, 0.03), silent = tone(10.0, 0.0);
+  for (auto *m : {&longMeter, &shortMeter}) {
+    feed(*m, loud);
+    feed(*m, quiet);
+  }
+  CHECK(longMeter.lufsOver(30.0) == Catch::Approx(shortMeter.lufs()).margin(1e-9));
+  // The last 30 s are all quiet; the long view still hears the loud part.
+  CHECK(longMeter.lufs() > longMeter.lufsOver(30.0) + 15.0);
+  CHECK(longMeter.gatedSecondsOver(30.0) == Catch::Approx(shortMeter.gatedSeconds()).margin(1e-9));
+  for (auto *m : {&longMeter, &shortMeter})
+    feed(*m, silent);
+  CHECK(longMeter.lufsOver(30.0) == Catch::Approx(shortMeter.lufs()).margin(1e-9));
+  CHECK(longMeter.gatedSecondsOver(5.0) == 0.0);  // a resting player: nothing to go on
+  // Asking for more than the window is the window.
+  CHECK(longMeter.lufsOver(1000.0) == longMeter.lufs());
+}
