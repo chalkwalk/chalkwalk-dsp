@@ -268,3 +268,24 @@ TEST_CASE("Small room: dark, and the two sides differ", "[mixing]") {
   }
   CHECK(std::fabs(lr / std::sqrt(ll * rr)) < 0.3);
 }
+
+TEST_CASE("Compressor: new settings mid-stream keep the state", "[mixing]") {
+  // A host whose parameters move while it plays reconfigures between blocks;
+  // the gain must carry on from where it was, not jump home and pump.
+  Compressor::Settings s;
+  s.thresholdDb = -30.0;
+  s.ratio = 4.0;
+  s.detectorMs = 10.0;
+  Compressor c;
+  c.prepare(kRate, s);
+  auto b = sine(1000.0, 0.25, 0.3);
+  c.process(b.data(), nullptr, (int)b.size());
+  const double before = c.gainReductionDb();
+  REQUIRE(before < -5.0);
+  s.ratio = 4.5;
+  c.configure(kRate, s);
+  CHECK(c.gainReductionDb() == before);
+  auto one = sine(1000.0, 0.25, 0.001);
+  c.process(one.data(), nullptr, (int)one.size());
+  CHECK(std::fabs(c.gainReductionDb() - before) < 1.0);
+}
