@@ -27,6 +27,7 @@
 // and gains the flush it was missing.
 
 #include <chalkwalk/dsp/Denormal.h>
+#include <chalkwalk/dsp/Pi.h>
 
 #include <cmath>
 
@@ -55,7 +56,6 @@ struct Svf {
   void set(double cutoffHz, double q, double sampleRate) noexcept {
     if (sampleRate <= 0.0)
       return;
-    constexpr double kPi = 3.14159265358979323846;
     const double ceiling = 0.45 * sampleRate;
     const double fc = cutoffHz < 1.0 ? 1.0 : (cutoffHz > ceiling ? ceiling : cutoffHz);
     const double safeQ = q < 0.05 ? 0.05 : q;

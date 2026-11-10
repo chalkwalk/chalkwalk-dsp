@@ -12,7 +12,6 @@ using namespace chalkwalk::dsp;
 namespace {
 
 constexpr double kSr = 48000.0;
-constexpr double kPi = 3.14159265358979323846;
 
 // Steady-state amplitude response at one frequency: drive a sine in, measure
 // what comes out after the transient has passed.
